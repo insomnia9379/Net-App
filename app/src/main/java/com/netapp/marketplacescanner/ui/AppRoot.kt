@@ -29,7 +29,6 @@ fun AppRoot(vm: ScannerViewModel = viewModel()) {
                 vm = vm,
                 onAdd = { nav.navigate("${Routes.EDIT}/-1") },
                 onOpen = { id -> nav.navigate("${Routes.RESULTS}/$id") },
-                onEdit = { id -> nav.navigate("${Routes.EDIT}/$id") },
                 onLogin = { nav.navigate(Routes.LOGIN) },
                 onSettings = { nav.navigate(Routes.SETTINGS) },
             )

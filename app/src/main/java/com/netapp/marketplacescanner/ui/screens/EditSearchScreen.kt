@@ -12,7 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -147,7 +147,7 @@ fun EditSearchScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Divider()
+            HorizontalDivider()
             Text("Alerts", style = MaterialTheme.typography.titleMedium)
 
             ToggleRow("Notify on new listings", alertNew) { alertNew = it }

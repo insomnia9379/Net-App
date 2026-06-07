@@ -10,7 +10,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -73,7 +73,7 @@ fun SettingsScreen(
                 Button(onClick = onLogin) { Text("Sign in to Facebook") }
             }
 
-            Divider()
+            HorizontalDivider()
             Text("Scan frequency", style = MaterialTheme.typography.titleMedium)
             val options = listOf(15L, 30L, 60L, 120L, 360L)
             options.forEach { minutes ->
@@ -95,7 +95,7 @@ fun SettingsScreen(
                 }
             }
 
-            Divider()
+            HorizontalDivider()
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -111,7 +111,7 @@ fun SettingsScreen(
                 Switch(checked = wifiOnly, onCheckedChange = { vm.setWifiOnly(it) })
             }
 
-            Divider()
+            HorizontalDivider()
             Text(
                 "Listings are fetched from your own Facebook session and stored only on " +
                     "this device. This is a personal tool — respect Facebook's Terms of " +

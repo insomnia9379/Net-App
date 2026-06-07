@@ -49,7 +49,6 @@ fun SearchListScreen(
     vm: ScannerViewModel,
     onAdd: () -> Unit,
     onOpen: (Long) -> Unit,
-    onEdit: (Long) -> Unit,
     onLogin: () -> Unit,
     onSettings: () -> Unit,
 ) {
@@ -116,7 +115,6 @@ fun SearchListScreen(
                     SearchCard(
                         search = search,
                         onOpen = { onOpen(search.id) },
-                        onEdit = { onEdit(search.id) },
                         onToggle = { vm.toggleEnabled(search) },
                     )
                 }
@@ -158,7 +156,6 @@ private fun EmptyState() {
 private fun SearchCard(
     search: SavedSearch,
     onOpen: () -> Unit,
-    onEdit: () -> Unit,
     onToggle: () -> Unit,
 ) {
     Card(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {

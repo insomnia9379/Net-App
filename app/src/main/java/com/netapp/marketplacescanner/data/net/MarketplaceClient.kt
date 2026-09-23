@@ -75,7 +75,12 @@ class MarketplaceClient(private val session: SessionStore) {
             search.minPrice?.let { add("minPrice=$it") }
             search.maxPrice?.let { add("maxPrice=$it") }
             add("radius_km=${search.radiusKm}")
-            add("sortBy=creation_time_descend")
+            val sort = if (search.sortBy == SavedSearch.SORT_NEAREST) {
+                "distance_ascend"
+            } else {
+                "creation_time_descend"
+            }
+            add("sortBy=$sort")
             add("exact=false")
         }
         return base.append("?").append(params.joinToString("&")).toString()

@@ -28,6 +28,8 @@ class ScannerRepository private constructor(
     fun observeSearches(): Flow<List<SavedSearch>> = searchDao.observeAll()
     fun observeSearch(id: Long): Flow<SavedSearch?> = searchDao.observe(id)
     fun observeListings(searchId: Long): Flow<List<Listing>> = listingDao.observeForSearch(searchId)
+    fun observeListingsByRank(searchId: Long): Flow<List<Listing>> =
+        listingDao.observeForSearchByRank(searchId)
     fun observeUnreadCount(): Flow<Int> = listingDao.observeUnreadCount()
 
     suspend fun getSearch(id: Long): SavedSearch? = searchDao.byId(id)
@@ -66,10 +68,16 @@ class ScannerRepository private constructor(
     ): List<Alert> {
         val keywords = search.mustIncludeKeywords
             .split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
+        val excluded = search.excludeKeywords
+            .split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
 
         val alerts = mutableListOf<Alert>()
+        // `scanned` arrives in Facebook's requested order (newest- or nearest-first),
+        // so the index is the display rank once irrelevant items are filtered out.
+        var rank = 0
         for (item in scanned) {
-            if (!matchesKeywords(item, keywords)) continue
+            if (!matchesKeywords(item, keywords, excluded)) continue
+            val itemRank = rank++
 
             val existing = listingDao.find(search.id, item.id)
             val now = System.currentTimeMillis()
@@ -108,6 +116,7 @@ class ScannerRepository private constructor(
                     imageUrl = item.imageUrl,
                     url = item.url,
                     lowestPrice = lowest,
+                    rank = itemRank,
                     firstSeenAt = existing?.firstSeenAt ?: now,
                     lastSeenAt = now,
                     isNew = isNewListing || (existing?.isNew ?: false) || shouldAlert,
@@ -128,10 +137,15 @@ class ScannerRepository private constructor(
         return alerts
     }
 
-    private fun matchesKeywords(item: ScannedListing, keywords: List<String>): Boolean {
-        if (keywords.isEmpty()) return true
+    private fun matchesKeywords(
+        item: ScannedListing,
+        required: List<String>,
+        excluded: List<String>,
+    ): Boolean {
         val haystack = item.title.lowercase()
-        return keywords.all { it in haystack }
+        if (excluded.any { it in haystack }) return false
+        if (required.isEmpty()) return true
+        return required.all { it in haystack }
     }
 
     private fun minOfNullable(a: Int?, b: Int?): Int? = when {

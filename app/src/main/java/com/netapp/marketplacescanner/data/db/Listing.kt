@@ -29,6 +29,9 @@ data class Listing(
     /** Lowest price we have ever observed for this listing. */
     val lowestPrice: Int?,
 
+    /** Position of this listing in the most recent scan's result order. */
+    val rank: Int = 0,
+
     val firstSeenAt: Long = System.currentTimeMillis(),
     val lastSeenAt: Long = System.currentTimeMillis(),
 

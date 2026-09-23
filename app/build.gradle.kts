@@ -79,6 +79,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.json:json:20240303")
 
+    // Thumbnail image loading
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
     // DataStore for lightweight settings/session metadata
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 

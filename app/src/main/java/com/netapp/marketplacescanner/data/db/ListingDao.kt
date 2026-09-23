@@ -11,6 +11,10 @@ interface ListingDao {
     @Query("SELECT * FROM listings WHERE searchId = :searchId ORDER BY lastSeenAt DESC")
     fun observeForSearch(searchId: Long): Flow<List<Listing>>
 
+    /** Nearest-first: the scan is requested sorted by distance, so rank encodes it. */
+    @Query("SELECT * FROM listings WHERE searchId = :searchId ORDER BY rank ASC")
+    fun observeForSearchByRank(searchId: Long): Flow<List<Listing>>
+
     @Query("SELECT * FROM listings ORDER BY firstSeenAt DESC LIMIT :limit")
     fun observeRecent(limit: Int = 200): Flow<List<Listing>>
 

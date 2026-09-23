@@ -2,6 +2,7 @@ package com.netapp.marketplacescanner.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,9 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -37,9 +40,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.netapp.marketplacescanner.data.db.Listing
 import com.netapp.marketplacescanner.ui.ScannerViewModel
 
@@ -54,7 +61,10 @@ fun ResultsScreen(
 ) {
     val context = LocalContext.current
     val search by vm.observeSearch(searchId).collectAsState(initial = null)
-    val listings by vm.listings(searchId).collectAsState(initial = emptyList())
+    val nearest = search?.sortBy == com.netapp.marketplacescanner.data.db.SavedSearch.SORT_NEAREST
+    // Re-subscribe to the correctly-ordered flow whenever the sort mode changes.
+    val listingsFlow = remember(searchId, nearest) { vm.listings(searchId, nearest) }
+    val listings by listingsFlow.collectAsState(initial = emptyList())
     val ui by vm.ui.collectAsState()
     val snackbar = remember { SnackbarHostState() }
 
@@ -135,8 +145,9 @@ fun ResultsScreen(
 @Composable
 private fun ListingCard(listing: Listing, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Thumbnail(listing.imageUrl, listing.title)
+            Column(Modifier.weight(1f).padding(start = 12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (listing.isNew) {
                         Badge { Text("NEW") }
@@ -145,6 +156,8 @@ private fun ListingCard(listing: Listing, onClick: () -> Unit) {
                         listing.title,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(start = if (listing.isNew) 8.dp else 0.dp),
                     )
                 }
@@ -166,6 +179,34 @@ private fun ListingCard(listing: Listing, onClick: () -> Unit) {
                     style = MaterialTheme.typography.labelSmall,
                 )
             }
+        }
+    }
+}
+
+/** 72dp rounded thumbnail; shows a neutral placeholder while loading or if blank. */
+@Composable
+private fun Thumbnail(url: String, contentDescription: String) {
+    val shape = RoundedCornerShape(10.dp)
+    Box(
+        modifier = Modifier
+            .size(72.dp)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (url.isBlank()) {
+            Icon(
+                Icons.Default.Image,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            AsyncImage(
+                model = url,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(72.dp),
+            )
         }
     }
 }

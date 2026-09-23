@@ -43,6 +43,8 @@ class ScannerViewModel(app: Application) : AndroidViewModel(app) {
     val ui: StateFlow<ScanUiState> = _ui.asStateFlow()
 
     fun listings(searchId: Long) = repo.observeListings(searchId)
+    fun listings(searchId: Long, nearest: Boolean) =
+        if (nearest) repo.observeListingsByRank(searchId) else repo.observeListings(searchId)
     fun observeSearch(searchId: Long) = repo.observeSearch(searchId)
 
     suspend fun getSearchOnce(searchId: Long): SavedSearch? = repo.getSearch(searchId)

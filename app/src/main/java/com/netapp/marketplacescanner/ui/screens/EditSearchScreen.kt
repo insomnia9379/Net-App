@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -53,6 +54,8 @@ fun EditSearchScreen(
     var minPrice by remember { mutableStateOf("") }
     var maxPrice by remember { mutableStateOf("") }
     var keywords by remember { mutableStateOf("") }
+    var excludeKeywords by remember { mutableStateOf("") }
+    var sortBy by remember { mutableStateOf(SavedSearch.SORT_NEWEST) }
     var alertNew by remember { mutableStateOf(true) }
     var alertDrop by remember { mutableStateOf(true) }
     var alertUnder by remember { mutableStateOf("") }
@@ -71,6 +74,8 @@ fun EditSearchScreen(
                 minPrice = s.minPrice?.toString() ?: ""
                 maxPrice = s.maxPrice?.toString() ?: ""
                 keywords = s.mustIncludeKeywords
+                excludeKeywords = s.excludeKeywords
+                sortBy = s.sortBy
                 alertNew = s.alertOnNew
                 alertDrop = s.alertOnPriceDrop
                 alertUnder = s.alertUnderPrice?.toString() ?: ""
@@ -146,6 +151,27 @@ fun EditSearchScreen(
                 placeholder = { Text("e.g. leather, genuine") },
                 modifier = Modifier.fillMaxWidth(),
             )
+            OutlinedTextField(
+                value = excludeKeywords, onValueChange = { excludeKeywords = it },
+                label = { Text("Exclude keywords (comma separated)") },
+                placeholder = { Text("e.g. broken, parts, replica") },
+                supportingText = { Text("Hide results containing any of these words") },
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Text("Sort results by", style = MaterialTheme.typography.labelLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = sortBy == SavedSearch.SORT_NEWEST,
+                    onClick = { sortBy = SavedSearch.SORT_NEWEST },
+                    label = { Text("Newest") },
+                )
+                FilterChip(
+                    selected = sortBy == SavedSearch.SORT_NEAREST,
+                    onClick = { sortBy = SavedSearch.SORT_NEAREST },
+                    label = { Text("Closest") },
+                )
+            }
 
             HorizontalDivider()
             Text("Alerts", style = MaterialTheme.typography.titleMedium)
@@ -167,6 +193,8 @@ fun EditSearchScreen(
                         minPrice = minPrice.toIntOrNull(),
                         maxPrice = maxPrice.toIntOrNull(),
                         mustIncludeKeywords = keywords.trim(),
+                        excludeKeywords = excludeKeywords.trim(),
+                        sortBy = sortBy,
                         alertOnNew = alertNew,
                         alertOnPriceDrop = alertDrop,
                         alertUnderPrice = alertUnder.toIntOrNull(),

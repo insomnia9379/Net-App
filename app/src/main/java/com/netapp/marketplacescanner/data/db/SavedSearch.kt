@@ -33,6 +33,15 @@ data class SavedSearch(
      */
     val mustIncludeKeywords: String = "",
 
+    /**
+     * Comma-separated words that, if present in a listing's title, exclude it —
+     * for filtering out results that have nothing to do with the search.
+     */
+    val excludeKeywords: String = "",
+
+    /** Result ordering: [SORT_NEWEST] or [SORT_NEAREST]. */
+    val sortBy: String = SORT_NEWEST,
+
     // --- Alert triggers ---
     val alertOnNew: Boolean = true,
     val alertOnPriceDrop: Boolean = true,
@@ -43,4 +52,9 @@ data class SavedSearch(
     val createdAt: Long = System.currentTimeMillis(),
     val lastScannedAt: Long = 0L,
     val lastResultCount: Int = 0,
-)
+) {
+    companion object {
+        const val SORT_NEWEST = "NEWEST"
+        const val SORT_NEAREST = "NEAREST"
+    }
+}

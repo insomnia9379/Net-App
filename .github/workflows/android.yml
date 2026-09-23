@@ -6,6 +6,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Cancel a superseded run when push + pull_request fire for the same ref.
+concurrency:
+  group: android-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build debug APK
@@ -23,9 +28,10 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        with:
+          # Install exactly what the build needs; the legacy "tools" package the
+          # action installs by default was removed by Google and fails.
+          packages: "platform-tools platforms;android-34 build-tools;34.0.0"
 
       - name: Build debug APK
         run: ./gradlew :app:assembleDebug --stacktrace

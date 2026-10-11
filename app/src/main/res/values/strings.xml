@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Marketplace Scanner</string>
+    <string name="scan_channel_name">Listing alerts</string>
+    <string name="scan_channel_desc">Notifications for new and changed Marketplace listings</string>
+    <string name="status_channel_name">Scanning status</string>
+    <string name="status_channel_desc">Foreground status while a scan runs</string>
+</resources>

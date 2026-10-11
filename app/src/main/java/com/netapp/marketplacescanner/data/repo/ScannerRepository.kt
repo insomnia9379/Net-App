@@ -23,7 +23,7 @@ class ScannerRepository private constructor(
     private val db = AppDatabase.get(context)
     private val searchDao = db.searchDao()
     private val listingDao = db.listingDao()
-    private val client = MarketplaceClient(session)
+    private val client = MarketplaceClient(context, session)
 
     fun observeSearches(): Flow<List<SavedSearch>> = searchDao.observeAll()
     fun observeSearch(id: Long): Flow<SavedSearch?> = searchDao.observe(id)

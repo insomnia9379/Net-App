@@ -29,6 +29,15 @@ data class Listing(
     /** Lowest price we have ever observed for this listing. */
     val lowestPrice: Int?,
 
+    /** Deal score vs. comparables: STEAL / FAIR / HIGH / UNKNOWN. */
+    val score: String = "UNKNOWN",
+
+    /** User saved this listing inside the app (favorite). */
+    val saved: Boolean = false,
+
+    /** Where a saved item came from: "APP" or "FB" (imported from Facebook). */
+    val savedSource: String = "APP",
+
     /** Position of this listing in the most recent scan's result order. */
     val rank: Int = 0,
 

@@ -5,6 +5,7 @@ import com.netapp.marketplacescanner.data.db.AppDatabase
 import com.netapp.marketplacescanner.data.db.Listing
 import com.netapp.marketplacescanner.data.db.SavedSearch
 import com.netapp.marketplacescanner.data.model.ScannedListing
+import com.netapp.marketplacescanner.data.net.DealScorer
 import com.netapp.marketplacescanner.data.net.MarketplaceClient
 import com.netapp.marketplacescanner.data.net.ScanResult
 import com.netapp.marketplacescanner.data.net.SessionStore
@@ -31,6 +32,10 @@ class ScannerRepository private constructor(
     fun observeListingsByRank(searchId: Long): Flow<List<Listing>> =
         listingDao.observeForSearchByRank(searchId)
     fun observeUnreadCount(): Flow<Int> = listingDao.observeUnreadCount()
+    fun observeSaved(): Flow<List<Listing>> = listingDao.observeSaved()
+
+    suspend fun setSaved(listing: Listing, saved: Boolean) =
+        listingDao.setSaved(listing.rowId, saved, "APP")
 
     suspend fun getSearch(id: Long): SavedSearch? = searchDao.byId(id)
     suspend fun saveSearch(search: SavedSearch): Long = searchDao.upsert(search)
@@ -61,6 +66,16 @@ class ScannerRepository private constructor(
         }
     }
 
+    /**
+     * Ingests listings captured by the foreground (visible WebView) scanner:
+     * scores them, persists them, records the scan, and returns the alerts.
+     */
+    suspend fun ingest(search: SavedSearch, scanned: List<ScannedListing>): ScanOutcome {
+        val alerts = reconcile(search, scanned)
+        searchDao.markScanned(search.id, System.currentTimeMillis(), scanned.size)
+        return ScanOutcome.Completed(scanned.size, alerts)
+    }
+
     /** Persists scanned listings and decides which ones warrant an alert. */
     private suspend fun reconcile(
         search: SavedSearch,
@@ -71,14 +86,16 @@ class ScannerRepository private constructor(
         val excluded = search.excludeKeywords
             .split(",").map { it.trim().lowercase() }.filter { it.isNotEmpty() }
 
-        val alerts = mutableListOf<Alert>()
-        // `scanned` arrives in Facebook's requested order (newest- or nearest-first),
-        // so the index is the display rank once irrelevant items are filtered out.
-        var rank = 0
-        for (item in scanned) {
-            if (!matchesKeywords(item, keywords, excluded)) continue
-            val itemRank = rank++
+        // Keep only the listings relevant to this search; their prices are the
+        // comparables that define "market value" for scoring.
+        val matching = scanned.filter { matchesKeywords(it, keywords, excluded) }
+        val prices = matching.mapNotNull { it.price }.filter { it > 0 }
+        val marketValue = DealScorer.median(prices)
 
+        val alerts = mutableListOf<Alert>()
+        // `matching` is in Facebook's requested order (newest- or nearest-first),
+        // so the index is the display rank.
+        matching.forEachIndexed { itemRank, item ->
             val existing = listingDao.find(search.id, item.id)
             val now = System.currentTimeMillis()
             val lowest = minOfNullable(existing?.lowestPrice, item.price)
@@ -90,11 +107,13 @@ class ScannerRepository private constructor(
                 item.price != null && item.price <= threshold
             } ?: false
 
-            // Pick the single most relevant alert kind for this listing. A price
-            // drop on something we already track wins; otherwise, for a brand new
-            // listing, an explicit under-threshold beats a plain "new" alert. When
-            // a threshold is configured, plain "new" alerts are suppressed so the
-            // user only hears about listings that actually clear their price.
+            val score = DealScorer.score(
+                price = item.price,
+                marketValue = marketValue,
+                underThreshold = search.alertUnderPrice,
+                comparableCount = prices.size,
+            )
+
             val kind = when {
                 priceDropped && search.alertOnPriceDrop -> AlertKind.PRICE_DROP
                 isNewListing && underThreshold -> AlertKind.UNDER_PRICE
@@ -116,6 +135,9 @@ class ScannerRepository private constructor(
                     imageUrl = item.imageUrl,
                     url = item.url,
                     lowestPrice = lowest,
+                    score = score,
+                    saved = existing?.saved ?: false,
+                    savedSource = existing?.savedSource ?: "APP",
                     rank = itemRank,
                     firstSeenAt = existing?.firstSeenAt ?: now,
                     lastSeenAt = now,

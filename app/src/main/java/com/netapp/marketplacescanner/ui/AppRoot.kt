@@ -8,6 +8,8 @@ import androidx.navigation.compose.rememberNavController
 import com.netapp.marketplacescanner.ui.screens.EditSearchScreen
 import com.netapp.marketplacescanner.ui.screens.LoginScreen
 import com.netapp.marketplacescanner.ui.screens.ResultsScreen
+import com.netapp.marketplacescanner.ui.screens.SavedScreen
+import com.netapp.marketplacescanner.ui.screens.ScanScreen
 import com.netapp.marketplacescanner.ui.screens.SearchListScreen
 import com.netapp.marketplacescanner.ui.screens.SettingsScreen
 
@@ -15,6 +17,8 @@ object Routes {
     const val LIST = "list"
     const val EDIT = "edit"
     const val RESULTS = "results"
+    const val SCAN = "scan"
+    const val SAVED = "saved"
     const val LOGIN = "login"
     const val SETTINGS = "settings"
 }
@@ -31,6 +35,7 @@ fun AppRoot(vm: ScannerViewModel = viewModel()) {
                 onOpen = { id -> nav.navigate("${Routes.RESULTS}/$id") },
                 onLogin = { nav.navigate(Routes.LOGIN) },
                 onSettings = { nav.navigate(Routes.SETTINGS) },
+                onSaved = { nav.navigate(Routes.SAVED) },
             )
         }
         composable("${Routes.EDIT}/{id}") { entry ->
@@ -48,8 +53,20 @@ fun AppRoot(vm: ScannerViewModel = viewModel()) {
                 searchId = id,
                 onBack = { nav.popBackStack() },
                 onEdit = { nav.navigate("${Routes.EDIT}/$id") },
-                onLogin = { nav.navigate(Routes.LOGIN) },
+                onScan = { nav.navigate("${Routes.SCAN}/$id") },
             )
+        }
+        composable("${Routes.SCAN}/{id}") { entry ->
+            val id = entry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+            ScanScreen(
+                vm = vm,
+                searchId = id,
+                onBack = { nav.popBackStack() },
+                onViewResults = { nav.popBackStack() },
+            )
+        }
+        composable(Routes.SAVED) {
+            SavedScreen(vm = vm, onBack = { nav.popBackStack() })
         }
         composable(Routes.LOGIN) {
             LoginScreen(

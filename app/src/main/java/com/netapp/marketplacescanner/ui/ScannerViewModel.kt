@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.netapp.marketplacescanner.data.db.Listing
 import com.netapp.marketplacescanner.data.db.SavedSearch
+import com.netapp.marketplacescanner.data.model.ScannedListing
+import com.netapp.marketplacescanner.data.net.MarketplaceUrl
 import com.netapp.marketplacescanner.data.repo.ScanOutcome
 import com.netapp.marketplacescanner.data.repo.ScannerRepository
 import com.netapp.marketplacescanner.notify.Notifications
@@ -46,6 +48,28 @@ class ScannerViewModel(app: Application) : AndroidViewModel(app) {
     fun listings(searchId: Long, nearest: Boolean) =
         if (nearest) repo.observeListingsByRank(searchId) else repo.observeListings(searchId)
     fun observeSearch(searchId: Long) = repo.observeSearch(searchId)
+
+    fun savedItems() = repo.observeSaved()
+    fun setSaved(listing: Listing, saved: Boolean) =
+        viewModelScope.launch { repo.setSaved(listing, saved) }
+
+    /** The Marketplace search URL the foreground Scan screen loads. */
+    fun scanUrl(search: SavedSearch): String = MarketplaceUrl.search(search)
+
+    /**
+     * Persists listings captured by the foreground scanner, fires alerts, and
+     * returns a short summary line for the UI.
+     */
+    suspend fun persistScan(search: SavedSearch, listings: List<ScannedListing>): String {
+        val outcome = repo.ingest(search, listings)
+        return if (outcome is ScanOutcome.Completed) {
+            val label = search.query.ifBlank { "Marketplace" }
+            Notifications.notifyAlerts(getApplication(), label, outcome.alerts)
+            "${outcome.total} listings • ${outcome.alerts.size} new alert(s)"
+        } else {
+            "Scan finished"
+        }
+    }
 
     suspend fun getSearchOnce(searchId: Long): SavedSearch? = repo.getSearch(searchId)
 

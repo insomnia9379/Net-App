@@ -24,6 +24,13 @@ interface ListingDao {
     @Query("SELECT COUNT(*) FROM listings WHERE isNew = 1")
     fun observeUnreadCount(): Flow<Int>
 
+    /** All saved items across every search, newest save activity first. */
+    @Query("SELECT * FROM listings WHERE saved = 1 ORDER BY lastSeenAt DESC")
+    fun observeSaved(): Flow<List<Listing>>
+
+    @Query("UPDATE listings SET saved = :saved, savedSource = :source WHERE rowId = :rowId")
+    suspend fun setSaved(rowId: Long, saved: Boolean, source: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(listing: Listing): Long
 

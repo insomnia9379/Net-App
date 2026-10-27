@@ -44,5 +44,20 @@ eq(norm[1].price, 0, 'normalize Free = 0');
 eq(norm[1].img, '', 'normalize drops non-http img');
 eq(norm[2].title, 'Talaria XXX', 'normalize falls back to alt when only a price line');
 
+// --- Scanner.filterRelevant (the "electric buggy returned clothes" fix) ---
+const mixed = [
+  { id: '1', title: 'Electric Buggy 48V' },
+  { id: '2', title: "Men's T-Shirt, size L" },
+  { id: '3', title: 'Kids electric ride-on buggy' },
+  { id: '4', title: 'Electric scooter' },        // has "electric" but not "buggy"
+  { id: '5', title: 'Dune buggy (gas)' },         // has "buggy" but not "electric"
+];
+const strict = Scanner.filterRelevant(mixed, { query: 'electric buggy', strict: true });
+eq(strict.map((x) => x.id), ['1', '3'], 'strict keeps only titles with all query words (drops clothes)');
+const loose = Scanner.filterRelevant(mixed, { query: 'electric buggy', strict: false });
+eq(loose.length, 5, 'non-strict keeps everything when no excludes');
+const excl = Scanner.filterRelevant(mixed, { query: 'electric buggy', strict: false, exclude: 'shirt, gas' });
+eq(excl.map((x) => x.id), ['1', '3', '4'], 'exclude words drop matching titles');
+
 console.log(failed === 0 ? '\nALL TESTS PASSED' : `\n${failed} TEST(S) FAILED`);
 process.exit(failed === 0 ? 0 : 1);

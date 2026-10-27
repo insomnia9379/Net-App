@@ -18,6 +18,8 @@ async function loadState() {
     $('city').value = last.city || '';
     $('minPrice').value = last.minPrice || '';
     $('maxPrice').value = last.maxPrice || '';
+    $('exclude').value = last.exclude || '';
+    if (typeof last.strict === 'boolean') $('strict').checked = last.strict;
   }
   renderSavedCount();
 }
@@ -30,10 +32,15 @@ function params() {
     city: $('city').value.trim(),
     minPrice: $('minPrice').value.trim(),
     maxPrice: $('maxPrice').value.trim(),
+    exclude: $('exclude').value.trim(),
+    strict: $('strict').checked,
     radiusKm: 65,
     sort: 'NEWEST',
   };
 }
+
+// Facebook pads results with loosely-related junk; Scanner.filterRelevant keeps
+// only titles that match the query (and honors the exclude words).
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -73,7 +80,9 @@ async function runScan() {
 
     setStatus('Reading listings…');
     const raw = await fb.executeJavaScript(Scanner.EXTRACT_JS, true).catch(() => []);
-    const listings = Scanner.normalize(raw);
+    const all = Scanner.normalize(raw);
+    const listings = Scanner.filterRelevant(all, p);
+    const hidden = all.length - listings.length;
 
     // Market-value scoring from the comparables in this scan.
     const prices = listings.map((l) => l.price).filter((n) => typeof n === 'number' && n > 0);
@@ -86,7 +95,8 @@ async function runScan() {
     }));
 
     const deals = results.filter((r) => DealScorer.isDeal(r.score)).length;
-    setStatus(`Found ${results.length} listings · ${deals} deals · market value ~$${mv || '?'}`);
+    const hiddenNote = hidden > 0 ? ` · ${hidden} off-topic hidden` : '';
+    setStatus(`Found ${results.length} listings · ${deals} deals · market ~$${mv || '?'}${hiddenNote}`);
     render();
   } catch (e) {
     setStatus('Error: ' + (e && e.message ? e.message : e));

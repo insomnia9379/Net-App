@@ -82,13 +82,30 @@
     return out;
   }
 
+  // Facebook pads results with loosely-related items. Keep only titles that
+  // actually match: drop any excluded word, and (when strict) require every
+  // search word to appear in the title. Pure — unit-tested in Node.
+  function filterRelevant(listings, opts) {
+    opts = opts || {};
+    var tokens = String(opts.query || '').toLowerCase().split(/\s+/).filter(function (w) { return w.length >= 2; });
+    var excludes = String(opts.exclude || '').toLowerCase().split(',')
+      .map(function (s) { return s.trim(); }).filter(Boolean);
+    return (listings || []).filter(function (l) {
+      var t = String((l && l.title) || '').toLowerCase();
+      if (excludes.some(function (w) { return t.indexOf(w) >= 0; })) return false;
+      if (opts.strict && tokens.length) return tokens.every(function (w) { return t.indexOf(w) >= 0; });
+      return true;
+    });
+  }
+
   var api = {
     DESKTOP_UA: DESKTOP_UA,
     buildUrl: buildUrl,
     EXTRACT_JS: EXTRACT_JS,
     SCROLL_JS: SCROLL_JS,
     LOGIN_JS: LOGIN_JS,
-    normalize: normalize
+    normalize: normalize,
+    filterRelevant: filterRelevant
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Scanner = api;

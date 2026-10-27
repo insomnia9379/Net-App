@@ -43,6 +43,8 @@ header {
 #query { flex: 2; min-width: 180px; }
 #city { flex: 1; min-width: 120px; }
 #minPrice, #maxPrice { width: 90px; }
+#exclude { flex: 1; min-width: 140px; }
+.check { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; white-space: nowrap; }
 button.primary {
   background: var(--green-d); color: #fff; border: none; border-radius: 8px;
   padding: 9px 20px; font-size: 14px; font-weight: 600; cursor: pointer;

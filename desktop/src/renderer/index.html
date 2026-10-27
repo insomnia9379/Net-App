@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src https: data:; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <title>Marketplace Scanner</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">🏷️ Marketplace Scanner</div>
+    <nav class="tabs">
+      <button id="tabScan" class="tab active">Scan</button>
+      <button id="tabSaved" class="tab">Saved <span id="savedCount" class="pill">0</span></button>
+    </nav>
+  </header>
+
+  <section id="controls">
+    <input id="query" type="text" placeholder="Search (e.g. electric buggy)" />
+    <input id="city" type="text" placeholder="City (e.g. miami) — or set area in FB panel" />
+    <input id="minPrice" type="number" placeholder="Min $" />
+    <input id="maxPrice" type="number" placeholder="Max $" />
+    <input id="exclude" type="text" placeholder="Exclude words (e.g. shirt, hat)" />
+    <label class="check"><input id="strict" type="checkbox" checked /> Match all words</label>
+    <button id="scanBtn" class="primary">Scan</button>
+  </section>
+
+  <div id="main">
+    <div id="left">
+      <div id="filters">
+        <button class="chip active" data-filter="all">All <span id="allCount">0</span></button>
+        <button class="chip" data-filter="deals">🔥 Deals <span id="dealCount">0</span></button>
+      </div>
+      <div id="status">Enter a search and press Scan. Log into Facebook on the right first if needed.</div>
+      <div id="list"></div>
+    </div>
+    <div id="right">
+      <div id="webTools">
+        <button id="webHome" title="Open Facebook">Facebook</button>
+        <span id="webUrl"></span>
+      </div>
+      <webview id="fb" src="https://www.facebook.com/marketplace/"
+               partition="persist:fb"
+               useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+               allowpopups></webview>
+    </div>
+  </div>
+
+  <script src="../dealScorer.js"></script>
+  <script src="../scanner.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>

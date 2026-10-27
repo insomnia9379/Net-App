@@ -27,6 +27,13 @@ eq(/facebook\.com\/marketplace\/miami\/search\/\?query=sur%20ron/.test(url), tru
 eq(/maxPrice=3000/.test(url), true, 'buildUrl maxPrice');
 eq(/minPrice=/.test(url), false, 'buildUrl omits empty minPrice');
 
+// --- city slug handling (typed display names must become FB slugs) ---
+eq(Scanner.slugifyCity('Orlando'), 'orlando', 'slug lowercases');
+eq(Scanner.slugifyCity('Los Angeles'), 'losangeles', 'slug strips spaces');
+eq(Scanner.slugifyCity('  '), '', 'slug blank');
+eq(/\/marketplace\/losangeles\/search\//.test(Scanner.buildUrl({ query: 'bike', city: 'Los Angeles' })), true, 'buildUrl uses slug in path');
+eq(/\/marketplace\/search\//.test(Scanner.buildUrl({ query: 'bike', city: '' })), true, 'buildUrl omits location when blank');
+
 // --- Scanner.normalize (desktop DOM extraction output) ---
 const raw = [
   { id: '111', texts: ['$1,200', 'Sur Ron Light Bee', 'Miami, FL', '1,000 miles'], img: 'https://x/a.jpg', alt: '' },

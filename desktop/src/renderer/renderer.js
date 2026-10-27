@@ -44,13 +44,49 @@ function params() {
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
-function waitForStopLoading(timeoutMs) {
-  return new Promise((resolve) => {
-    let done = false;
-    const finish = () => { if (!done) { done = true; fb.removeEventListener('did-stop-loading', finish); resolve(); } };
-    fb.addEventListener('did-stop-loading', finish);
-    setTimeout(finish, timeoutMs);
-  });
+// Force the webview to the target URL and wait until the live DOM reflects it.
+// Facebook is a single-page app, so `did-stop-loading` is unreliable and a
+// plain loadURL can be swallowed as a soft navigation — leaving the old feed on
+// screen. We drive the page's own location as a fallback and poll the DOM
+// (listing count) until it stabilizes, which is what actually confirms the new
+// search/location loaded.
+async function navigateAndWait(url) {
+  const firstToken = (($('query').value || '').trim().toLowerCase().split(/\s+/)[0]) || '';
+  try { if (typeof fb.stop === 'function') fb.stop(); } catch (_) {}
+  try { if (typeof fb.loadURL === 'function') fb.loadURL(url); } catch (_) {}
+
+  let probe = null;
+  let last = -1;
+  let stable = 0;
+  let forced = false;
+  const start = Date.now();
+  while (Date.now() - start < 30000) {
+    await delay(1000);
+    probe = await fb.executeJavaScript(Scanner.PROBE_JS, true).catch(() => null);
+    if (!probe) continue;
+    if (probe.login) return probe;
+
+    const href = (probe.href || '').toLowerCase();
+    const onSearch = href.indexOf('/marketplace/') > -1 &&
+      (href.indexOf('/search') > -1 || href.indexOf('query=') > -1);
+    const hasToken = !firstToken || decodeURIComponent(href).indexOf(firstToken) > -1;
+
+    // If loadURL got swallowed and we're not on the search URL after ~5s,
+    // hard-navigate from inside the page (SPA can't intercept location.assign).
+    if (!forced && !onSearch && Date.now() - start > 5000) {
+      forced = true;
+      await fb.executeJavaScript('window.location.assign(' + JSON.stringify(url) + ')', true).catch(() => {});
+      last = -1; stable = 0;
+      continue;
+    }
+
+    if (onSearch && hasToken) {
+      if (probe.count === last) stable++; else stable = 0;
+      last = probe.count;
+      if (probe.count > 0 && stable >= 2) break;
+    }
+  }
+  return probe;
 }
 
 async function runScan() {
@@ -62,13 +98,14 @@ async function runScan() {
   const url = Scanner.buildUrl(p);
   try {
     setStatus('Loading Marketplace…');
-    fb.loadURL(url);
-    await waitForStopLoading(30000);
-    await delay(4000);
+    const probe = await navigateAndWait(url);
 
-    const needLogin = await fb.executeJavaScript(Scanner.LOGIN_JS, true).catch(() => false);
-    if (needLogin) {
+    if (probe && probe.login) {
       setStatus('🔑 Log into Facebook on the right, then press Scan again.');
+      return;
+    }
+    if (!probe) {
+      setStatus('Could not load the page — check the Facebook panel on the right.');
       return;
     }
 
@@ -96,7 +133,7 @@ async function runScan() {
 
     const deals = results.filter((r) => DealScorer.isDeal(r.score)).length;
     const hiddenNote = hidden > 0 ? ` · ${hidden} off-topic hidden` : '';
-    setStatus(`Found ${results.length} listings · ${deals} deals · market ~$${mv || '?'}${hiddenNote}`);
+    setStatus(`Found ${results.length} · ${deals} deals · market ~$${mv || '?'}${hiddenNote}`);
     render();
   } catch (e) {
     setStatus('Error: ' + (e && e.message ? e.message : e));

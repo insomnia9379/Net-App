@@ -9,9 +9,16 @@
 
   function enc(s) { return encodeURIComponent(s); }
 
+  // Facebook location in the URL path is a slug (lowercase, no spaces/punct),
+  // e.g. "miami", "losangeles". A display name like "Orlando, FL" won't resolve.
+  function slugifyCity(city) {
+    return String(city || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+  }
+
   function buildUrl(p) {
     var base = 'https://www.facebook.com/marketplace/';
-    if (p.city && p.city.trim()) base += p.city.trim() + '/';
+    var slug = slugifyCity(p.city);
+    if (slug) base += slug + '/';
     base += 'search/?query=' + enc(p.query || '');
     if (p.minPrice != null && p.minPrice !== '') base += '&minPrice=' + p.minPrice;
     if (p.maxPrice != null && p.maxPrice !== '') base += '&maxPrice=' + p.maxPrice;
@@ -46,6 +53,15 @@
     '(function(){return !!(document.querySelector(\'form[action*="login"]\')||' +
     'document.querySelector(\'input[name="email"]\')||' +
     'location.href.indexOf("login")>-1||location.href.indexOf("checkpoint")>-1);})()';
+
+  // Reports where the page actually is and how many cards it shows — used to
+  // confirm navigation landed (defeats the SPA "stale feed" problem).
+  var PROBE_JS =
+    '(function(){return {href:location.href,' +
+    'count:document.querySelectorAll(\'a[href*="/marketplace/item/"]\').length,' +
+    'login:!!(document.querySelector(\'form[action*="login"]\')||' +
+    'document.querySelector(\'input[name="email"]\')||' +
+    'location.href.indexOf("login")>-1||location.href.indexOf("checkpoint")>-1)};})()';
 
   var PRICE = /^(?:[A-Z]{0,3}\$\s?[\d,]+(?:\.\d+)?|Free|FREE)$/;
   var LOCATION = /^[A-Za-z][A-Za-z .'\-]{1,40}, [A-Z]{2}$/;
@@ -101,9 +117,11 @@
   var api = {
     DESKTOP_UA: DESKTOP_UA,
     buildUrl: buildUrl,
+    slugifyCity: slugifyCity,
     EXTRACT_JS: EXTRACT_JS,
     SCROLL_JS: SCROLL_JS,
     LOGIN_JS: LOGIN_JS,
+    PROBE_JS: PROBE_JS,
     normalize: normalize,
     filterRelevant: filterRelevant
   };
